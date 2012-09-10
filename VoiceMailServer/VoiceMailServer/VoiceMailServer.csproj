@@ -38,10 +38,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Libs\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="SIPLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Libs\SIPLib.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -57,10 +53,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Libs\log4net.dll" />
-    <Content Include="Libs\SIPLib.dll" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj">
+      <Project>{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}</Project>
+      <Name>SIPLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
