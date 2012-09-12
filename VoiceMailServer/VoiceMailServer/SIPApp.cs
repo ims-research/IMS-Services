@@ -153,6 +153,7 @@ namespace VoiceMailServer
             Useragents.Remove(ua);
             Useragents.Add(dialog);
             Log.Info("New dialog created");
+
         }
 
         public override Timer CreateTimer(UserAgent app, SIPStack stack)

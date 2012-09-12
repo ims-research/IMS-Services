@@ -50,8 +50,6 @@ namespace VoiceMailServer
             {
                 case "INVITE":
                     {
-                        
-                        
                         _app.Useragents.Add(e.UA);
                         Message m = e.UA.CreateResponse(200, "OK");
                         e.UA.SendResponse(m);
@@ -93,8 +91,8 @@ namespace VoiceMailServer
             _app = new SIPApp(localTransport);
             _app.RequestRecvEvent += new EventHandler<SipMessageEventArgs>(AppRequestRecvEvent);
             _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
-            const string scscfIP = "192.168.20.248";
-            const int scscfPort = 4060;
+            const string scscfIP = "192.168.0.7";
+            const int scscfPort = 6060;
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("voicemail@open-ims.test");
             Console.ReadKey();
