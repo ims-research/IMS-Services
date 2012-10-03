@@ -96,7 +96,9 @@ namespace VoiceMailServer
             _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
             const string scscfIP = "scscf.open-ims.test";
             const int scscfPort = 6060;
-            SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
+            //SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
+            //Disabled sending straight to SCSCF
+            SIPStack stack = CreateStack(_app);
             stack.Uri = new SIPURI("voicemail@open-ims.test");
             Console.ReadKey();
         }
