@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Text;
+using System.Xml;
 using SIPLib.SIP;
 using SIPLib.Utils;
 using log4net;
@@ -13,6 +15,7 @@ namespace MessageToEmail
         private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
         private static readonly ILog IMLog = LogManager.GetLogger("IMLogger");
         private static SIPApp _app;
+        private static Address _localparty;
         
 
         private const string fromPassword = "imsim2emailpassword";
@@ -113,18 +116,33 @@ namespace MessageToEmail
             }
         }
 
+        private static void PublishService()
+        {
+            UserAgent pua = new UserAgent(_app.Stack) { RemoteParty = new Address("<sip:ims2email@open-ims.test>"), LocalParty = _localparty };
+            Message request = pua.CreateRequest("PUBLISH");
+            request.InsertHeader(new Header("service.description", "Event"));
+            request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load("Resources/ServiceDescription.xml");
+            request.Body = xmlDoc.OuterXml;
+            pua.SendRequest(request);
+        }
+
         static void Main(string[] args)
         {
             TransportInfo localTransport = CreateTransport(Helpers.GetLocalIP(), 7171);
             _app = new SIPApp(localTransport);
-            _app.RequestRecvEvent += new EventHandler<SipMessageEventArgs>(AppRequestRecvEvent);
+            _app.RequestRecvEvent +=     new EventHandler<SipMessageEventArgs>(AppRequestRecvEvent);
             _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
             const string scscfIP = "scscf.open-ims.test";
             const int scscfPort = 6060;
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("im2email@open-ims.test");
-            SendEmail("richard.spiers@gmail.com","im2email started");
+             _localparty = new Address("<sip:ims2email@open-ims.test>");
+            //SendEmail("richard.spiers@gmail.com","im2email started");
+            PublishService();
             Console.ReadKey();
         }
+
     }
 }

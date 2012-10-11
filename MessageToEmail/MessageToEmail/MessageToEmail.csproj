@@ -53,9 +53,14 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Libs\log4net.dll" />
+    <Content Include="Resources\ServiceDescription.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj">
