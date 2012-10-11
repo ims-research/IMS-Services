@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Service>
+	<Service_Information>
+		<Name>Voice Mail</Name>
+		<Type>Session Establishment</Type>
+		<Version>0.3</Version>
+		<Provider>Voice Mail Company</Provider>
+		<Description>This service will let the caller record a message which can be retrieved later by the callee</Description>
+	</Service_Information>
+	<Service_Config>
+		<Server_IP>192.168.0.150</Server_IP>
+		<Server_Port>7890</Server_Port>
+		<GUID>71f7523d-b461-405b-ab14-695014e03fd4</GUID>
+	</Service_Config>
+	<SIP_Headers>
+		<READ></READ>
+		<WRITE></WRITE>
+	</SIP_Headers>
+	<SIP_Responses>
+	<SIP_200_OK>Successfully accepted call, will begin recording callers voice</SIP_200_OK>
+	</SIP_Responses>
+	<Capabalities>
+		<audio>true</audio>
+		<video>false</video>
+		<duplex>recv-only</duplex>
+		<methods>INVITE</methods>
+	</Capabalities>
+</Service>

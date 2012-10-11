@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Xml;
 using SIPLib.SIP;
 using SIPLib.Utils;
 using log4net;
@@ -11,6 +12,8 @@ namespace VoiceMailServer
         private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
         private static readonly ILog SessionLog = LogManager.GetLogger("SessionLogger");
         private static SIPApp _app;
+        private static Address _localparty;
+
         public static SIPStack CreateStack(SIPApp app, string proxyIp = null, int proxyPort = -1)
         {
             SIPStack myStack = new SIPStack(app);
@@ -37,6 +40,14 @@ namespace VoiceMailServer
                 case "INVITE":
                 case "REGISTER":
                 case "BYE":
+                case "PUBLISH":
+                    {
+                        if (response.ResponseCode == 200)
+                        {
+                            Log.Info("Successfully sent service information to SRS");
+                        }
+                        break;
+                    }
                 default:
                     Log.Info("Response for Request Type " + requestType + " is unhandled ");
                     break;
@@ -88,6 +99,18 @@ namespace VoiceMailServer
             }
         }
 
+        private static void PublishService()
+        {
+            UserAgent pua = new UserAgent(_app.Stack) { RemoteParty = new Address("<sip:voicemail@open-ims.test>"), LocalParty = _localparty };
+            Message request = pua.CreateRequest("PUBLISH");
+            request.InsertHeader(new Header("service.description", "Event"));
+            request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load("Resources/ServiceDescription.xml");
+            request.Body = xmlDoc.OuterXml;
+            pua.SendRequest(request);
+        }
+
         static void Main(string[] args)
         {
             TransportInfo localTransport = CreateTransport(Helpers.GetLocalIP(), 7000);
@@ -96,10 +119,10 @@ namespace VoiceMailServer
             _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
             const string scscfIP = "scscf.open-ims.test";
             const int scscfPort = 6060;
-            //SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
-            //Disabled sending straight to SCSCF
-            SIPStack stack = CreateStack(_app);
+            SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("voicemail@open-ims.test");
+            _localparty = new Address("<sip:voicemail@open-ims.test>");
+            PublishService();
             Console.ReadKey();
         }
     }

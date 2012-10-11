@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Net;
-using System.Text;
 using System.Xml;
 using SIPLib.SIP;
 using SIPLib.Utils;
 using log4net;
-using System.Net;
 using System.Net.Mail;
 
 namespace MessageToEmail
 {
     internal class Server
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
-        private static readonly ILog IMLog = LogManager.GetLogger("IMLogger");
+        private static readonly ILog ConsoleLog = LogManager.GetLogger("ConsoleLog");
+        private static readonly ILog SIPLog = LogManager.GetLogger("SIPLog");
+        private static readonly ILog DebugLog = LogManager.GetLogger("DebugLog");
+        private static readonly ILog ServiceLog = LogManager.GetLogger("ServiceLog");
         private static SIPApp _app;
         private static Address _localparty;
         
@@ -45,8 +45,6 @@ namespace MessageToEmail
         public static void SendEmail(string to, string body)
         {
             MailAddress toAddress = new MailAddress(to,to);
-            /*
-            MailAddress toAddress = new MailAddress("richard.spiers@gmail.com", "Richard Spiers");*/
             using (
                 MailMessage message = new MailMessage(fromAddress, toAddress)
                                                   {
@@ -66,35 +64,55 @@ namespace MessageToEmail
 
         static void AppResponseRecvEvent(object sender, SipMessageEventArgs e)
         {
-            Log.Info("Response Received:" + e.Message);
             Message response = e.Message;
             string requestType = response.First("CSeq").ToString().Trim().Split()[1].ToUpper();
+
+            SIPLog.Info(response);
+            ConsoleLog.Info(response.ResponseCode + " response received for "+requestType+" request");
+
             switch (requestType)
             {
+                case "PUBLISH":
+                    {
+                        if (response.ResponseCode == 200)
+                        {
+                            DebugLog.Info("Successfully sent service information to SRS");
+                        }
+                        else
+                        {
+                            ConsoleLog.Warn("Received non 200 OK response"); 
+                            ConsoleLog.Warn(response);
+                        }
+                        break;
+                    }
                 case "INVITE":
                 case "REGISTER":
                 case "BYE":
                 default:
-                    Log.Info("Response for Request Type " + requestType + " is unhandled ");
+                    ConsoleLog.Warn("Response for Request Type " + requestType + " is unhandled ");
                     break;
             }
         }
 
         static void AppRequestRecvEvent(object sender, SipMessageEventArgs e)
         {
-            Log.Info("Request Received:" + e.Message);
             Message request = e.Message;
+
+            SIPLog.Info(request);
+            ConsoleLog.Info(request.Method.ToUpper() + " request received");
+
             switch (request.Method.ToUpper())
             {
                 case "MESSAGE":
                     {
-                        IMLog.Info(request.First("From") + " says " + request.Body);
+                        ServiceLog.Info(request.First("From") + " says " + request.Body);
                         _app.Useragents.Add(e.UA);
                         Message m = e.UA.CreateResponse(200, "OK");
                         e.UA.SendResponse(m);
                         if (!request.First("Content-Type").ToString().ToUpper().Equals("APPLICATION/IM-ISCOMPOSING+XML"))
                         {
                             SendEmail("richard.spiers@gmail.com",request.Body);
+                            ServiceLog.Info("Sent email to richard.spiers@gmail.com");
                         }
                         break;
                     }
@@ -110,7 +128,7 @@ namespace MessageToEmail
                 case "INFO":
                 default:
                     {
-                        Log.Info("Request with method " + request.Method.ToUpper() + " is unhandled");
+                        ConsoleLog.Warn("Request with method " + request.Method.ToUpper() + " is unhandled");
                         break;
                     }
             }
@@ -126,6 +144,7 @@ namespace MessageToEmail
             xmlDoc.Load("Resources/ServiceDescription.xml");
             request.Body = xmlDoc.OuterXml;
             pua.SendRequest(request);
+            ConsoleLog.Info("Sent service information to SRS");
         }
 
         static void Main(string[] args)
@@ -139,7 +158,6 @@ namespace MessageToEmail
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("im2email@open-ims.test");
              _localparty = new Address("<sip:ims2email@open-ims.test>");
-            //SendEmail("richard.spiers@gmail.com","im2email started");
             PublishService();
             Console.ReadKey();
         }
