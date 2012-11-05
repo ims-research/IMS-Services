@@ -103,7 +103,7 @@ namespace VoiceMailServer
         {
             UserAgent pua = new UserAgent(_app.Stack) { RemoteParty = new Address("<sip:voicemail@open-ims.test>"), LocalParty = _localparty };
             Message request = pua.CreateRequest("PUBLISH");
-            request.InsertHeader(new Header("service.description", "Event"));
+            request.InsertHeader(new Header("service-description", "Event"));
             request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load("Resources/ServiceDescription.xml");
