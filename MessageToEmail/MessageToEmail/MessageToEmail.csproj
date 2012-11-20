@@ -54,7 +54,7 @@
   <ItemGroup>
     <Content Include="Libs\log4net.dll" />
     <Content Include="Resources\ServiceDescription.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
