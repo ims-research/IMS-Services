@@ -3,13 +3,14 @@
 	<Service_Information>
 		<Name>Voice Mail</Name>
 		<Type>Session Establishment</Type>
-		<Version>0.3</Version>
+		<Version>0.4</Version>
 		<Provider>Voice Mail Company</Provider>
 		<Description>This service will let the caller record a message which can be retrieved later by the callee</Description>
 	</Service_Information>
 	<Service_Config>
 		<Server_IP>192.168.0.150</Server_IP>
 		<Server_Port>7890</Server_Port>
+        <Server_URI>sip:voicemail@open-ims.test</Server_URI>
 		<GUID>71f7523d-b461-405b-ab14-695014e03fd4</GUID>
 	</Service_Config>
 	<SIP_Headers>
