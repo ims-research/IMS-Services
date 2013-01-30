@@ -1,20 +1,91 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
+using System.Timers;
 using System.Xml;
 using SIPLib.SIP;
 using SIPLib.Utils;
 using log4net;
+using Timer = System.Timers.Timer;
 
 namespace VoiceMailServer
 {
-    class Program
+    internal class Program
     {
-        private static readonly ILog Log = LogManager.GetLogger(typeof(SIPApp));
+        private static readonly ILog Log = LogManager.GetLogger(typeof (SIPApp));
         private static readonly ILog SessionLog = LogManager.GetLogger("SessionLogger");
         private static SIPApp _app;
         private static Address _localparty;
         private static string _localIP;
-        private static int _localPort = 7000;
+        private const int LocalPort = 7000;
+
+        private static PerformanceCounter _totalCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        private static PerformanceCounter _cpuCounter = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
+        private static PerformanceCounter _memCounter = new PerformanceCounter("Memory", "Available MBytes");
+        private static PerformanceCounter _totalMemCounter = new PerformanceCounter("Memory", "Available MBytes", Process.GetCurrentProcess().ProcessName);
+
+        private static float GetTotalCpuUsage(bool sleep = true)
+        {
+            if (sleep)
+            {
+                _totalCpuCounter.NextValue();
+                System.Threading.Thread.Sleep(1000);// 1 second wait   
+            }
+            return _totalCpuCounter.NextValue();
+        }
+
+        private static float GetCpuUsage(bool sleep = true)
+        {
+            if (sleep)
+            {
+                _cpuCounter.NextValue();
+                System.Threading.Thread.Sleep(1000); // 1 second wait
+            }
+            return _cpuCounter.NextValue();
+        }
+
+        private static float GetMemAvailable(bool sleep = true)
+        {
+            if (sleep)
+            {
+                _memCounter.NextValue();
+                System.Threading.Thread.Sleep(1000); // 1 second wait
+            }
+            return _memCounter.NextValue();
+        }
+
+        private static float GetTotalMemAvailable(bool sleep = true)
+        {
+            if (sleep)
+            {
+                _memCounter.NextValue();
+                System.Threading.Thread.Sleep(1000); // 1 second wait
+            }
+            return _memCounter.NextValue();
+        }
+
+        private static void GetResourceUsage(object sender, ElapsedEventArgs e)
+        {
+            GetCpuUsage(false);
+            GetTotalCpuUsage(false);
+            GetMemAvailable(false);
+            GetTotalMemAvailable(false);
+            System.Threading.Thread.Sleep(1000);
+            float cpu = GetCpuUsage(false);
+            float totalCPU =GetTotalCpuUsage(false);
+            float mem = GetMemAvailable(false);
+            float totalMem = GetTotalMemAvailable(false);
+            UpdateServiceMetrics(cpu, totalCPU, mem, totalMem);
+        }
+
+        private static void StartTimer()
+        {
+            Timer aTimer = new Timer();
+            aTimer.Elapsed += GetResourceUsage;
+            aTimer.Interval = 30000;
+            aTimer.Enabled = true;
+        }
 
         public static SIPStack CreateStack(SIPApp app, string proxyIp = null, int proxyPort = -1)
         {
@@ -29,19 +100,16 @@ namespace VoiceMailServer
 
         public static TransportInfo CreateTransport(string listenIp, int listenPort)
         {
-            return new TransportInfo(IPAddress.Parse(listenIp), listenPort, System.Net.Sockets.ProtocolType.Udp);
+            return new TransportInfo(IPAddress.Parse(listenIp), listenPort, ProtocolType.Udp);
         }
 
-        static void AppResponseRecvEvent(object sender, SipMessageEventArgs e)
+        private static void AppResponseRecvEvent(object sender, SipMessageEventArgs e)
         {
-            Log.Info("Response Received:"+e.Message);
+            Log.Info("Response Received:" + e.Message);
             Message response = e.Message;
             string requestType = response.First("CSeq").ToString().Trim().Split()[1].ToUpper();
             switch (requestType)
             {
-                case "INVITE":
-                case "REGISTER":
-                case "BYE":
                 case "PUBLISH":
                     {
                         if (response.ResponseCode == 200)
@@ -56,7 +124,7 @@ namespace VoiceMailServer
             }
         }
 
-        static void AppRequestRecvEvent(object sender, SipMessageEventArgs e)
+        private static void AppRequestRecvEvent(object sender, SipMessageEventArgs e)
         {
             Log.Info("Request Received:" + e.Message);
             Message request = e.Message;
@@ -64,7 +132,7 @@ namespace VoiceMailServer
             {
                 case "INVITE":
                     {
-                        SessionLog.Info("Call received from " +request.First("From"));
+                        SessionLog.Info("Call received from " + request.First("From"));
                         _app.Useragents.Add(e.UA);
                         Message m = e.UA.CreateResponse(200, "OK");
                         e.UA.SendResponse(m);
@@ -85,25 +153,51 @@ namespace VoiceMailServer
                         e.UA.SendResponse(m);
                         break;
                     }
-                case "ACK":
-                case "MESSAGE":
-                case "OPTIONS":
-                case "REFER":
-                case "SUBSCRIBE":
-                case "NOTIFY":
-                case "PUBLISH":
-                case "INFO":
                 default:
                     {
                         Log.Info("Request with method " + request.Method.ToUpper() + " is unhandled");
+                        Message m = e.UA.CreateResponse(501, "Not Implemented");
+                        e.UA.SendResponse(m);
                         break;
                     }
             }
         }
 
+        private static void UpdateServiceMetrics(float cpu, float totalCPU, float mem, float totalMem)
+        {
+            UserAgent pua = new UserAgent(_app.Stack)
+                {
+                    RemoteParty = new Address("<sip:voicemail@open-ims.test>"),
+                    LocalParty = _localparty
+                };
+            Message request = pua.CreateRequest("PUBLISH");
+            request.InsertHeader(new Header("service-description", "Event"));
+            request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load("Resources/ServiceDescription.xml");
+            XmlNode node = xmlDoc.SelectSingleNode("Service/Metrics/TotalCPU");
+            node.InnerText = totalCPU.ToString();
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/CPU");
+            node.InnerText = cpu.ToString();
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/TotalMemory");
+            node.InnerText = totalMem.ToString();
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/Memory");
+            node.InnerText = mem.ToString();
+
+            request.Body = xmlDoc.OuterXml;
+            pua.SendRequest(request);
+        }
+
         private static void PublishService(bool determineIP, int port)
         {
-            UserAgent pua = new UserAgent(_app.Stack) { RemoteParty = new Address("<sip:voicemail@open-ims.test>"), LocalParty = _localparty };
+            UserAgent pua = new UserAgent(_app.Stack)
+                {
+                    RemoteParty = new Address("<sip:voicemail@open-ims.test>"),
+                    LocalParty = _localparty
+                };
             Message request = pua.CreateRequest("PUBLISH");
             request.InsertHeader(new Header("service-description", "Event"));
             request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
@@ -111,32 +205,43 @@ namespace VoiceMailServer
             xmlDoc.Load("Resources/ServiceDescription.xml");
             if (determineIP)
             {
-                XmlNode IPnode = xmlDoc.SelectSingleNode("Service/Service_Config/Server_IP");
-                IPnode.InnerText = _localIP;
+                XmlNode ipNode = xmlDoc.SelectSingleNode("Service/Service_Config/Server_IP");
+                if (ipNode == null)
+                {
+                    Log.Error("Service XML does not contain Server IP node");
+                    return;
+                }
+                ipNode.InnerText = _localIP;
             }
-            XmlNode Portnode = xmlDoc.SelectSingleNode("Service/Service_Config/Server_Port");
-            Portnode.InnerText = Convert.ToString(port);
+            XmlNode portNode = xmlDoc.SelectSingleNode("Service/Service_Config/Server_Port");
+            if (portNode == null)
+            {
+                Log.Error("Service XML does not contain Server Port node");
+                return;
+            }
+            portNode.InnerText = Convert.ToString(port);
             xmlDoc.Save("Resources/ServiceDescription.xml");
             request.Body = xmlDoc.OuterXml;
             pua.SendRequest(request);
         }
 
-        static void Main(string[] args)
+        private static void Main()
         {
             if (String.IsNullOrEmpty(_localIP))
             {
                 _localIP = Helpers.GetLocalIP();
             }
-            TransportInfo localTransport = CreateTransport(_localIP, _localPort);
+            TransportInfo localTransport = CreateTransport(_localIP, LocalPort);
             _app = new SIPApp(localTransport);
-            _app.RequestRecvEvent += new EventHandler<SipMessageEventArgs>(AppRequestRecvEvent);
-            _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
+            _app.RequestRecvEvent += AppRequestRecvEvent;
+            _app.ResponseRecvEvent += AppResponseRecvEvent;
             const string scscfIP = "scscf.open-ims.test";
             const int scscfPort = 6060;
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("voicemail@open-ims.test");
             _localparty = new Address("<sip:voicemail@open-ims.test>");
-            PublishService(true,_localPort);
+            PublishService(true, LocalPort);
+            StartTimer();
             Console.ReadKey();
         }
     }
