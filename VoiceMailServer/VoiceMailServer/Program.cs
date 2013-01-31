@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -20,70 +21,19 @@ namespace VoiceMailServer
         private static string _localIP;
         private const int LocalPort = 7000;
 
-        private static PerformanceCounter _totalCpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-        private static PerformanceCounter _cpuCounter = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-        private static PerformanceCounter _memCounter = new PerformanceCounter("Memory", "Available MBytes");
-        private static PerformanceCounter _totalMemCounter = new PerformanceCounter("Memory", "Available MBytes", Process.GetCurrentProcess().ProcessName);
+       
 
-        private static float GetTotalCpuUsage(bool sleep = true)
+        private static void GetMetrics(Object sender, ElapsedEventArgs e)
         {
-            if (sleep)
-            {
-                _totalCpuCounter.NextValue();
-                System.Threading.Thread.Sleep(1000);// 1 second wait   
-            }
-            return _totalCpuCounter.NextValue();
-        }
-
-        private static float GetCpuUsage(bool sleep = true)
-        {
-            if (sleep)
-            {
-                _cpuCounter.NextValue();
-                System.Threading.Thread.Sleep(1000); // 1 second wait
-            }
-            return _cpuCounter.NextValue();
-        }
-
-        private static float GetMemAvailable(bool sleep = true)
-        {
-            if (sleep)
-            {
-                _memCounter.NextValue();
-                System.Threading.Thread.Sleep(1000); // 1 second wait
-            }
-            return _memCounter.NextValue();
-        }
-
-        private static float GetTotalMemAvailable(bool sleep = true)
-        {
-            if (sleep)
-            {
-                _memCounter.NextValue();
-                System.Threading.Thread.Sleep(1000); // 1 second wait
-            }
-            return _memCounter.NextValue();
-        }
-
-        private static void GetResourceUsage(object sender, ElapsedEventArgs e)
-        {
-            GetCpuUsage(false);
-            GetTotalCpuUsage(false);
-            GetMemAvailable(false);
-            GetTotalMemAvailable(false);
-            System.Threading.Thread.Sleep(1000);
-            float cpu = GetCpuUsage(false);
-            float totalCPU =GetTotalCpuUsage(false);
-            float mem = GetMemAvailable(false);
-            float totalMem = GetTotalMemAvailable(false);
-            UpdateServiceMetrics(cpu, totalCPU, mem, totalMem);
+            Dictionary<string,float> metrics = Metrics.GetResourceUsage();
+            UpdateServiceMetrics(metrics);
         }
 
         private static void StartTimer()
         {
             Timer aTimer = new Timer();
-            aTimer.Elapsed += GetResourceUsage;
-            aTimer.Interval = 30000;
+            aTimer.Elapsed += GetMetrics;
+            aTimer.Interval = 15000;
             aTimer.Enabled = true;
         }
 
@@ -163,7 +113,7 @@ namespace VoiceMailServer
             }
         }
 
-        private static void UpdateServiceMetrics(float cpu, float totalCPU, float mem, float totalMem)
+        private static void UpdateServiceMetrics(Dictionary<string,float> metrics )
         {
             UserAgent pua = new UserAgent(_app.Stack)
                 {
@@ -176,16 +126,16 @@ namespace VoiceMailServer
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.Load("Resources/ServiceDescription.xml");
             XmlNode node = xmlDoc.SelectSingleNode("Service/Metrics/TotalCPU");
-            node.InnerText = totalCPU.ToString();
+            node.InnerText = String.Format("{0:0.##}",metrics["totalCPU"]);
 
             node = xmlDoc.SelectSingleNode("Service/Metrics/CPU");
-            node.InnerText = cpu.ToString();
+            node.InnerText = String.Format("{0:0.##}", metrics["cpu"]);
 
             node = xmlDoc.SelectSingleNode("Service/Metrics/TotalMemory");
-            node.InnerText = totalMem.ToString();
+            node.InnerText = String.Format("{0:0.##}", metrics["memAvailable"]) + " MB";
 
             node = xmlDoc.SelectSingleNode("Service/Metrics/Memory");
-            node.InnerText = mem.ToString();
+            node.InnerText = String.Format("{0:0.##}", ((metrics["memUsed"] / 1024) / 1024))+ " MB";
 
             request.Body = xmlDoc.OuterXml;
             pua.SendRequest(request);

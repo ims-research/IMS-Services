@@ -1,27 +1,30 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Timers;
 using System.Xml;
 using SIPLib.SIP;
 using SIPLib.Utils;
 using log4net;
 using System.Net.Mail;
+using Timer = System.Timers.Timer;
 
 namespace MessageToEmail
 {
-    internal class Server
+    static class Server
     {
         private static readonly ILog ConsoleLog = LogManager.GetLogger("ConsoleLog");
         private static readonly ILog SIPLog = LogManager.GetLogger("SIPLog");
         private static readonly ILog DebugLog = LogManager.GetLogger("DebugLog");
         private static readonly ILog ServiceLog = LogManager.GetLogger("ServiceLog");
         private static string _localIP;
-        private static int _localPort = 7171;
+        private const int LocalPort = 7171;
         private static SIPApp _app;
         private static Address _localparty;
         
 
-        private const string fromPassword = "imsim2emailpassword";
-        private const string subject = "Subject";
+        private const string FromPassword = "imsim2emailpassword";
+        private const string Subject = "Subject";
         private static MailAddress fromAddress = new MailAddress("imsim2email@gmail.com", "IM 2 Email Server");
         private static SmtpClient smtp = new SmtpClient
                                       {
@@ -30,10 +33,10 @@ namespace MessageToEmail
                                           EnableSsl = true,
                                           DeliveryMethod = SmtpDeliveryMethod.Network,
                                           UseDefaultCredentials = false,
-                                          Credentials = new NetworkCredential(fromAddress.Address, fromPassword)
+                                          Credentials = new NetworkCredential(fromAddress.Address, FromPassword)
                                       };
 
-        public static SIPStack CreateStack(SIPApp app, string proxyIp = null, int proxyPort = -1)
+        private static SIPStack CreateStack(SIPApp app, string proxyIp = null, int proxyPort = -1)
         {
             SIPStack myStack = new SIPStack(app);
             if (proxyIp != null)
@@ -44,13 +47,13 @@ namespace MessageToEmail
             return myStack;
         }
 
-        public static void SendEmail(string to, string body)
+        private static void SendEmail(string to, string body)
         {
             MailAddress toAddress = new MailAddress(to,to);
             using (
                 MailMessage message = new MailMessage(fromAddress, toAddress)
                                                   {
-                                                      Subject = subject,
+                                                      Subject = Subject,
                                                       Body = body
                                                   }
             )
@@ -59,7 +62,50 @@ namespace MessageToEmail
             }
         }
 
-        public static TransportInfo CreateTransport(string listenIp, int listenPort)
+        private static void GetMetrics(Object sender, ElapsedEventArgs e)
+        {
+            Dictionary<string, float> metrics = Metrics.GetResourceUsage();
+            UpdateServiceMetrics(metrics);
+        }
+
+        private static void StartTimer()
+        {
+            Timer aTimer = new Timer();
+            aTimer.Elapsed += GetMetrics;
+            aTimer.Interval = 15000;
+            aTimer.Enabled = true;
+        }
+
+        private static void UpdateServiceMetrics(Dictionary<string, float> metrics)
+        {
+            UserAgent pua = new UserAgent(_app.Stack)
+            {
+                RemoteParty = new Address("<sip:voicemail@open-ims.test>"),
+                LocalParty = _localparty
+            };
+            Message request = pua.CreateRequest("PUBLISH");
+            request.InsertHeader(new Header("service-description", "Event"));
+            request.InsertHeader(new Header("application/SERV_DESC+xml", "Content-Type"));
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load("Resources/ServiceDescription.xml");
+            XmlNode node = xmlDoc.SelectSingleNode("Service/Metrics/TotalCPU");
+            node.InnerText = String.Format("{0:0.##}", metrics["totalCPU"]);
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/CPU");
+            node.InnerText = String.Format("{0:0.##}", metrics["cpu"]);
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/TotalMemory");
+            node.InnerText = String.Format("{0:0.##}", metrics["memAvailable"]) + " MB";
+
+            node = xmlDoc.SelectSingleNode("Service/Metrics/Memory");
+            node.InnerText = String.Format("{0:0.##}", ((metrics["memUsed"] / 1024) / 1024)) + " MB";
+
+            request.Body = xmlDoc.OuterXml;
+            pua.SendRequest(request);
+        }
+
+
+        private static TransportInfo CreateTransport(string listenIp, int listenPort)
         {
             return new TransportInfo(IPAddress.Parse(listenIp), listenPort, System.Net.Sockets.ProtocolType.Udp);
         }
@@ -87,9 +133,6 @@ namespace MessageToEmail
                         }
                         break;
                     }
-                case "INVITE":
-                case "REGISTER":
-                case "BYE":
                 default:
                     ConsoleLog.Warn("Response for Request Type " + requestType + " is unhandled ");
                     break;
@@ -118,19 +161,11 @@ namespace MessageToEmail
                         }
                         break;
                     }
-                case "INVITE":
-                case "ACK":
-                case "BYE":
-                case "CANCEL":
-                case "OPTIONS":
-                case "REFER":
-                case "SUBSCRIBE":
-                case "NOTIFY":
-                case "PUBLISH":
-                case "INFO":
                 default:
                     {
-                        ConsoleLog.Warn("Request with method " + request.Method.ToUpper() + " is unhandled");
+                        DebugLog.Info("Request with method " + request.Method.ToUpper() + " is unhandled");
+                        Message m = e.UA.CreateResponse(501, "Not Implemented");
+                        e.UA.SendResponse(m);
                         break;
                     }
             }
@@ -157,22 +192,23 @@ namespace MessageToEmail
             ConsoleLog.Info("Sent service information to SRS");
         }
 
-        static void Main(string[] args)
+        static void Main()
         {
             if (String.IsNullOrEmpty(_localIP))
             {
                 _localIP = Helpers.GetLocalIP();    
             }
-            TransportInfo localTransport = CreateTransport(_localIP, _localPort);
+            TransportInfo localTransport = CreateTransport(_localIP, LocalPort);
             _app = new SIPApp(localTransport);
-            _app.RequestRecvEvent +=     new EventHandler<SipMessageEventArgs>(AppRequestRecvEvent);
-            _app.ResponseRecvEvent += new EventHandler<SipMessageEventArgs>(AppResponseRecvEvent);
+            _app.RequestRecvEvent +=     AppRequestRecvEvent;
+            _app.ResponseRecvEvent += AppResponseRecvEvent;
             const string scscfIP = "scscf.open-ims.test";
             const int scscfPort = 6060;
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI("im2email@open-ims.test");
              _localparty = new Address("<sip:ims2email@open-ims.test>");
-            PublishService(true,_localPort);
+            PublishService(true,LocalPort);
+            StartTimer();
             Console.ReadKey();
         }
 

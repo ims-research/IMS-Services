@@ -25,4 +25,10 @@
     <duplex>none</duplex>
     <methods>MESSAGE</methods>
   </Capabalities>
+  <Metrics>
+    <TotalCPU></TotalCPU>
+    <CPU></CPU>
+    <TotalMemory></TotalMemory>
+    <Memory></Memory>
+  </Metrics>
 </Service>
