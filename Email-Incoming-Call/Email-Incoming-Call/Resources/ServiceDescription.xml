@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Service>
+  <Service_Information>
+    <Name>Email-Incoming-Call</Name>
+    <Type>Notification</Type>
+    <Version>0.1</Version>
+    <Provider>Generic Email Company</Provider>
+    <Description>This service emails details of all incoming calls to the end user</Description>
+  </Service_Information>
+  <Service_Config>
+    <Server_IP>192.168.20.25</Server_IP>
+    <Server_Port>8837</Server_Port>
+    <Server_URI>sip:emailincoming@open-ims.test</Server_URI>
+    <GUID>181e98af-7c15-4f15-b71b-7855b77ff84c</GUID>
+  </Service_Config>
+  <SIP_Headers>
+    <READ>FROM,CONTENT</READ>
+    <WRITE></WRITE>
+  </SIP_Headers>
+  <SIP_Responses>
+    <SIP_181_Forward_Call>Successfully emailed incoming call notification, forwarding on message</SIP_181_Forward_Call>
+  </SIP_Responses>
+  <Capabilities>
+    <audio>false</audio>
+    <video>false</video>
+    <duplex>none</duplex>
+    <methods>INVITE</methods>
+  </Capabilities>
+  <Metrics>
+    <TotalCPU></TotalCPU>
+    <CPU></CPU>
+    <TotalMemory></TotalMemory>
+    <Memory></Memory>
+  </Metrics>
+</Service>

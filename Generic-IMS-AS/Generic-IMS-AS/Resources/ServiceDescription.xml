@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Service>
+  <Service_Information>
+    <Name>Generic IMS-AS</Name>
+    <Type>Notification</Type>
+    <Version>0.1</Version>
+    <Provider>Generic</Provider>
+    <Description>This service is a generic IMS AS</Description>
+  </Service_Information>
+  <Service_Config>
+    <Server_IP>192.168.0.153</Server_IP>
+    <Server_Port>6278</Server_Port>
+    <GUID>4616f2cd-6471-4d65-8337-5d6e63dbf1c8</GUID>
+  </Service_Config>
+  <SIP_Headers>
+    <READ>FROM,CONTENT</READ>
+    <WRITE></WRITE>
+  </SIP_Headers>
+  <SIP_Responses>
+    <SIP_200_OK>Successfully accepted message</SIP_200_OK>
+  </SIP_Responses>
+  <Capabilities>
+    <audio>false</audio>
+    <video>false</video>
+    <duplex>none</duplex>
+    <methods>MESSAGE</methods>
+  </Capabilities>
+  <Metrics>
+    <TotalCPU></TotalCPU>
+    <CPU></CPU>
+    <TotalMemory></TotalMemory>
+    <Memory></Memory>
+  </Metrics>
+</Service>

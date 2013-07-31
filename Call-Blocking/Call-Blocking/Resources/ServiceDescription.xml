@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Service>
+  <Service_Information>
+    <Name>Call-Blocking</Name>
+    <Type>Session</Type>
+    <Version>0.3</Version>
+    <Provider>Global Voice Provider</Provider>
+    <Description>This service contains a black list of contacts that may not call the end user.</Description>
+  </Service_Information>
+  <Service_Config>
+    <Server_IP>192.168.20.25</Server_IP>
+    <Server_Port>4578</Server_Port>
+    <Server_URI>sip:callblocker@open-ims.test</Server_URI>
+    <GUID>eecc82b6-4e25-4d0c-a3b8-83c3524e6519</GUID>
+  </Service_Config>
+  <SIP_Headers>
+    <READ>TO,FROM</READ>
+    <WRITE></WRITE>
+  </SIP_Headers>
+  <SIP_Responses>
+    <SIP_181_Forward_Call>Successfully accepted message, user not in black list, continue session</SIP_181_Forward_Call>
+    <SIP_403_FORBIDDEN>User in black list, rejecting call</SIP_403_FORBIDDEN>
+  </SIP_Responses>
+  <Capabilities>
+    <audio>false</audio>
+    <video>false</video>
+    <duplex>none</duplex>
+    <methods>INVITE</methods>
+  </Capabilities>
+  <Metrics>
+    <TotalCPU></TotalCPU>
+    <CPU></CPU>
+    <TotalMemory></TotalMemory>
+    <Memory></Memory>
+  </Metrics>
+</Service>

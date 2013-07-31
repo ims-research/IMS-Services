@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoiceMailServer", "VoiceMailServer\VoiceMailServer.csproj", "{C0A6C0E4-1B69-4D2F-9D77-8011232B0136}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPLib", "..\..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj", "{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}"

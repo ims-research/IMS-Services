@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Service>
+  <Service_Information>
+    <Name>Call Logger</Name>
+    <Type>Notification</Type>
+    <Version>0.2</Version>
+    <Provider>Generic</Provider>
+    <Description>This service records details of incoming calls</Description>
+  </Service_Information>
+  <Service_Config>
+    <Server_IP>192.168.20.25</Server_IP>
+    <Server_Port>9333</Server_Port>
+    <Server_URI>sip:callLogger@open-ims.test</Server_URI>
+    <GUID>3e3787c7-2fde-4cb0-9e23-bdd7573c43ff</GUID>
+  </Service_Config>
+  <SIP_Headers>
+    <READ>FROM,CONTENT</READ>
+    <WRITE></WRITE>
+  </SIP_Headers>
+  <SIP_Responses>
+   <SIP_181_Forward_Call>Successfully recorded incoming call details, forwarding on message</SIP_181_Forward_Call>
+  </SIP_Responses>
+  <Capabilities>
+    <audio>false</audio>
+    <video>false</video>
+    <duplex>none</duplex>
+    <methods>INVITE</methods>
+  </Capabilities>
+  <Metrics>
+    <TotalCPU></TotalCPU>
+    <CPU></CPU>
+    <TotalMemory></TotalMemory>
+    <Memory></Memory>
+  </Metrics>
+</Service>

@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{C0A6C0E4-1B69-4D2F-9D77-8011232B0136}</ProjectGuid>
+    <ProjectGuid>{7F7BF926-7E11-4723-82FF-32565026601E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>VoiceMailServer</RootNamespace>
-    <AssemblyName>VoiceMailServer</AssemblyName>
+    <RootNamespace>Email_Incoming_Call</RootNamespace>
+    <AssemblyName>Email-Incoming-Call</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -51,14 +51,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Metrics.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="Server.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SIPApp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Libs\log4net.dll" />
     <Content Include="Resources\ServiceDescription.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
   </ItemGroup>

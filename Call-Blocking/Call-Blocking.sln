@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageToEmail", "MessageToEmail\MessageToEmail.csproj", "{7F7BF926-7E11-4723-82FF-32565026601E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Call-Blocking", "Call-Blocking\Call-Blocking.csproj", "{7F7BF926-7E11-4723-82FF-32565026601E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SIPLib", "..\..\C-Sharp-Sip-Lib\SIPLib\SIPLib.csproj", "{BCB5CEA8-22E7-470C-B566-CFEA2D051C9B}"
 EndProject
