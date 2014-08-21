@@ -117,11 +117,11 @@ namespace Call_Logger
 
         public override UserAgent CreateServer(Message request, SIPURI uri, SIPStack stack)
         {
-            if (request.Method == "INVITE")
+            if (request.Method != "CANCEL")
             {
-                return new UserAgent(Stack, request);
+                return new Proxy(Stack, request, true);
             }
-            return null;
+            else return null;
         }
 
         public override void Sending(UserAgent ua, Message message, SIPStack stack)
@@ -167,7 +167,7 @@ namespace Call_Logger
             Log.Debug("\n\n" + response.ToString());
             if (ResponseRecvEvent != null)
             {
-                ResponseRecvEvent(this, new SipMessageEventArgs(response));
+                ResponseRecvEvent(this, new SipMessageEventArgs(response, ua));
             }
         }
 
@@ -217,7 +217,7 @@ namespace Call_Logger
             }
             else
             {
-                Log.Error("CallID cannot be Null or Emtpy in EndCall");
+                Log.Error("CallID cannot be Null or Empty in EndCall");
             }
         }
 

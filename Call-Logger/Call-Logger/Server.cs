@@ -17,7 +17,7 @@ namespace Call_Logger
         private static readonly ILog SIPLog = LogManager.GetLogger("SIPLog");
         private static readonly ILog DebugLog = LogManager.GetLogger("DebugLog");
         private static readonly ILog ServiceLog = LogManager.GetLogger("ServiceLog");
-        private static string _localIP;
+        private static string _localIP = "192.168.20.25";
         private const int LocalPort = 9333;
         private static SIPApp _app;
         private const String ServerURI = "callLogger@open-ims.test";
@@ -105,10 +105,38 @@ namespace Call_Logger
                         }
                         break;
                     }
+                case "INVITE":
+                    {
+                        Proxy pua = (Proxy)(e.UA);
+                        RouteNewResponse(response, pua);
+                        break;
+                    }
                 default:
                     ConsoleLog.Warn("Response for Request Type " + requestType + " is unhandled ");
                     break;
             }
+        }
+
+        private static void RouteNewMessage(Message request, Proxy pua)
+        {
+
+            SIPURI to = request.Uri;
+            string toID = to.User + "@" + to.Host;
+
+            Address from = (Address)(request.First("From").Value);
+            string fromID = from.Uri.User + "@" + from.Uri.Host;
+
+            Address dest = new Address(to.ToString());
+
+            Message proxiedMessage = pua.CreateRequest(request.Method, dest, true, true);
+            proxiedMessage.First("To").Value = dest;
+            pua.SendRequest(proxiedMessage);
+        }
+
+        private static void RouteNewResponse(Message response, Proxy pua)
+        {
+            Message proxiedResponse = pua.CreateResponse(response.ResponseCode, response.ResponseText);
+            pua.SendResponse(proxiedResponse);
         }
 
         static void AppRequestRecvEvent(object sender, SipMessageEventArgs e)
@@ -125,6 +153,8 @@ namespace Call_Logger
                         LogCallDetails(request);
                         Message m = e.UA.CreateResponse(183, "Call Is Being Forwarded");
                         e.UA.SendResponse(m);
+                        Proxy pua = (Proxy)(e.UA);
+                        RouteNewMessage(request, pua);
                         break;
                     }
                 default:
@@ -178,8 +208,8 @@ namespace Call_Logger
             const int scscfPort = 6060;
             SIPStack stack = CreateStack(_app, scscfIP, scscfPort);
             stack.Uri = new SIPURI(ServerURI);
-            PublishService(true, LocalPort);
-            StartTimer();
+            //PublishService(true, LocalPort);
+            //StartTimer();
             Console.ReadKey();
         }
 
